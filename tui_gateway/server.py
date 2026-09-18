@@ -1988,7 +1988,8 @@ def _current_profile_name() -> str:
 # v5 ws_max_size >16 MiB file.attach frames; v6 plugins.manage rows carry the canonical registry key;
 # v7 blocking prompts are JSON-RPC server->client requests (`srq-<n>` frames, `open_requests` replay) — a v6
 # backend still emits `<kind>.request` notifications the renderer no longer listens for.
-DESKTOP_BACKEND_CONTRACT = 7
+# v8 connection RPCs carry the owner union and account-level connector operations are available.
+DESKTOP_BACKEND_CONTRACT = 8
 
 
 def _session_usage_snapshot(session: dict | None) -> dict:

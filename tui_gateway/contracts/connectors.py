@@ -2,18 +2,44 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import Field
 
-from .base import Result, WireEnum
+from .base import Params, Result, WireEnum
 from .common import OpenModel, ProfileParams
-from .connectors_operation import ConnectionOperationStatus
 from .registry import method
+
+
+class SessionOwner(Params):
+    type: Literal["session"]
+    session_id: str = Field(min_length=1)
+
+
+class AccountOwner(Params):
+    type: Literal["account"]
+
+
+ConnectorOwner = Annotated[SessionOwner | AccountOwner, Field(discriminator="type")]
+
+
+ConnectorSlug = Annotated[str, Field(pattern=r"^[a-z0-9][a-z0-9_-]*$")]
+
+
+from .connectors_operation import ConnectionOperationStatus
 
 
 class ConnectorErrorReason(WireEnum):
     invalid_params = "INVALID_PARAMS"
+    not_owner = "NOT_OWNER"
+    unsupported_runtime = "UNSUPPORTED_RUNTIME"
+    connector_request_failed = "CONNECTOR_REQUEST_FAILED"
+    invalid_connector_response = "INVALID_CONNECTOR_RESPONSE"
+    unknown_target = "UNKNOWN_TARGET"
+    link_still_valid = "LINK_STILL_VALID"
+    reissue_refused = "REISSUE_REFUSED"
+    unknown_operation = "UNKNOWN_OPERATION"
+    invalid_answer = "INVALID_ANSWER"
     needs_nous_auth = "NEEDS_NOUS_AUTH"
     connector_not_found = "CONNECTOR_NOT_FOUND"
     tools_unavailable = "TOOLS_UNAVAILABLE"
@@ -28,7 +54,7 @@ class ConnectorErrorReason(WireEnum):
 
 
 class ConnectorsListParams(ProfileParams):
-    session_id: str
+    owner: ConnectorOwner
 
 
 class ConnectorRow(OpenModel):
@@ -52,13 +78,13 @@ method(
     "connectors.list",
     params=ConnectorsListParams,
     result=ConnectorsListResult,
-    doc="Connector catalog + connection state for one owned session (``available=False`` when the toolset is off).",
+    doc="Connector catalog + connection state for one session or profile account owner.",
 )
 
 
 class ConnectorsConnectParams(ProfileParams):
-    session_id: str
-    connectors: list[str]
+    owner: ConnectorOwner
+    connectors: list[ConnectorSlug] = Field(min_length=1)
     reconnect: bool = False
 
 
@@ -75,7 +101,7 @@ method(
     "connectors.connect",
     params=ConnectorsConnectParams,
     result=ConnectorsConnectResult,
-    doc="Start (or re-initiate) authorization for named connectors on the session's connection operation.",
+    doc="Start or re-initiate authorization for named connectors on a session or account operation.",
 )
 
 

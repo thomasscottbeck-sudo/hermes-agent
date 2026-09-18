@@ -43,20 +43,24 @@ def run_operation(
     connection_callback: Optional[Callback],
     tick_seconds: Optional[float] = None,
     with_urls_in_result: bool,
+    operation: ConnectionOperation | None = None,
+    register_operation: bool = True,
 ) -> str:
     """Block the tool thread until the operation settles; return the tool's JSON string."""
-    operation = ConnectionOperation(targets, session_key=session_key, tool_call_id=tool_call_id)
-    try:
-        live.open(operation)
-    except live.OperationAlreadyOpen as exc:
-        from tools.registry import tool_error
+    operation = operation or ConnectionOperation(targets, session_key=session_key, tool_call_id=tool_call_id)
+    if register_operation:
+        try:
+            live.open(operation)
+        except live.OperationAlreadyOpen as exc:
+            from tools.registry import tool_error
 
-        return tool_error(
-            f"a connection operation is already open in this session ({exc.existing.op_id}); it settles "
-            "when the user finishes with the card, on Continue, or at its deadline. Do not start another."
-        )
+            return tool_error(
+                f"a connection operation is already open in this session ({exc.existing.op_id}); it settles "
+                "when the user finishes with the card, on Continue, or at its deadline. Do not start another."
+            )
     try:
         kind.prepare(operation)
+        operation.settle_if_all_resolved()
         if connection_callback is not None and not operation.settled:
             connection_callback(operation.request_payload())
         _watch(operation, kind, tick_seconds)

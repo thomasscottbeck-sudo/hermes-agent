@@ -9,11 +9,26 @@ projection: every frame carries the full target snapshot, and the renderer never
 
 from __future__ import annotations
 
+from typing import Annotated, Literal
+
 from pydantic import Field
 
 from .base import Params, Payload, Result, WireEnum
 from .common import ProfileParams
+from .connectors import ConnectorOwner
 from .registry import event, method
+
+
+class SessionOwnerPayload(Payload):
+    type: Literal["session"]
+    session_id: str
+
+
+class AccountOwnerPayload(Payload):
+    type: Literal["account"]
+
+
+ConnectionUpdateOwner = Annotated[SessionOwnerPayload | AccountOwnerPayload, Field(discriminator="type")]
 
 
 class ConnectionTargetKind(WireEnum):
@@ -123,6 +138,7 @@ class ConnectionUpdatePayload(ConnectionOperationStatus, Payload):
     """``methods_connectors._connection_update``: one target transition (``target``/``from``/``to``/
     ``actor``) or the settlement (none of those), with the full snapshot."""
 
+    owner: ConnectionUpdateOwner
     target: str | None = None
     from_: ConnectionTargetState | None = Field(default=None, alias="from")  # ``from`` is a keyword
     to: ConnectionTargetState | None = None
@@ -134,12 +150,12 @@ event("connection.update", ConnectionUpdatePayload,
 
 
 class ConnectionOperationParams(ProfileParams):
-    session_id: str
+    owner: ConnectorOwner
     op_id: str
 
 
 method("connectors.operation.status", params=ConnectionOperationParams, result=ConnectionOperationStatus,
-       doc="The current snapshot of one open operation on an owned session.")
+       doc="The current snapshot of one open session or account operation.")
 
 
 class ConnectionWakeResult(Result):

@@ -68,7 +68,7 @@ def dispatch(req: dict, transport: Optional[Transport] = None) -> dict | None:
             return _err(req.get("id"), 5035, "backend is retiring; reconnect to continue")
         try:
             ctx = contextvars.copy_context()  # the pool worker must see the bound transport
-            if normalized[1] in _CONNECTOR_RPC_METHODS:
+            if normalized[1] in _CONNECTOR_RPC_METHODS and normalized[2].get("owner", {}).get("type") == "session":
                 ctx.run(_capture_connector_rpc_owner, normalized[2])
 
             def run():

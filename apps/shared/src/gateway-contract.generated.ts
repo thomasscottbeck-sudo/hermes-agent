@@ -851,8 +851,15 @@ export interface VerificationEvidenceRow {
 }
 export interface ConnectionOperationParams {
   profile?: string | null
-  session_id: string
+  owner: SessionOwner | AccountOwner
   op_id: string
+}
+export interface SessionOwner {
+  type: 'session'
+  session_id: string
+}
+export interface AccountOwner {
+  type: 'account'
 }
 /** ``methods_connectors._operation_view``: the operation's full snapshot. */
 export interface ConnectionOperationStatus {
@@ -895,7 +902,7 @@ export interface ConnectionWakeResult {
 }
 export interface ConnectionRespondParams {
   profile?: string | null
-  session_id: string
+  owner: SessionOwner | AccountOwner
   op_id: string
   result: ConnectionAnswer
 }
@@ -919,7 +926,7 @@ export interface ConnectionRespondResult {
 }
 export interface ConnectorsListParams {
   profile?: string | null
-  session_id: string
+  owner: SessionOwner | AccountOwner
 }
 export interface ConnectorsListResult {
   available: boolean
@@ -937,7 +944,7 @@ export interface ConnectorRow {
 }
 export interface ConnectorsConnectParams {
   profile?: string | null
-  session_id: string
+  owner: SessionOwner | AccountOwner
   connectors: string[]
   reconnect?: boolean
 }
@@ -3931,11 +3938,19 @@ export interface ConnectionUpdatePayload {
   settled_at?: number | null
   settled_by?: ConnectionSettleReason | null
   targets: ConnectionOperationTarget[]
+  owner: SessionOwnerPayload | AccountOwnerPayload
   target?: string | null
   from?: ConnectionTargetState | null
   to?: ConnectionTargetState | null
   actor?: ConnectionActor | null
   detail?: string | null
+}
+export interface SessionOwnerPayload {
+  type: 'session'
+  session_id: string
+}
+export interface AccountOwnerPayload {
+  type: 'account'
 }
 /** ``tools/connectors/contract.py::Actor``. */
 export type ConnectionActor = 'user' | 'backend_watcher' | 'clock'
@@ -4369,11 +4384,11 @@ export interface RpcMethods {
   'connectors.accounts.remove': { params: ConnectorAccountsRemoveParams; result: ConnectorAccountsRemoveResult }
   /** The hosted connector catalog available to the scoped member. */
   'connectors.catalog': { params: ProfileParams; result: ConnectorsCatalogResult }
-  /** Start (or re-initiate) authorization for named connectors on the session's connection operation. */
+  /** Start or re-initiate authorization for named connectors on a session or account operation. */
   'connectors.connect': { params: ConnectorsConnectParams; result: ConnectorsConnectResult }
-  /** Connector catalog + connection state for one owned session (``available=False`` when the toolset is off). */
+  /** Connector catalog + connection state for one session or profile account owner. */
   'connectors.list': { params: ConnectorsListParams; result: ConnectorsListResult }
-  /** The current snapshot of one open operation on an owned session. */
+  /** The current snapshot of one open session or account operation. */
   'connectors.operation.status': { params: ConnectionOperationParams; result: ConnectionOperationStatus }
   /** The browser leg came back (hermes://connections/done): read the accounts now, not at the next tick. */
   'connectors.operation.wake': { params: ConnectionOperationParams; result: ConnectionWakeResult }

@@ -602,7 +602,7 @@
     },
     {
       "name": "connectors.connect",
-      "summary": "Start (or re-initiate) authorization for named connectors on the session's connection operation.",
+      "summary": "Start or re-initiate authorization for named connectors on a session or account operation.",
       "params": [
         {
           "name": "params",
@@ -620,7 +620,7 @@
     },
     {
       "name": "connectors.list",
-      "summary": "Connector catalog + connection state for one owned session (``available=False`` when the toolset is off).",
+      "summary": "Connector catalog + connection state for one session or profile account owner.",
       "params": [
         {
           "name": "params",
@@ -638,7 +638,7 @@
     },
     {
       "name": "connectors.operation.status",
-      "summary": "The current snapshot of one open operation on an owned session.",
+      "summary": "The current snapshot of one open session or account operation.",
       "params": [
         {
           "name": "params",
@@ -4041,6 +4041,36 @@
   ],
   "components": {
     "schemas": {
+      "AccountOwner": {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "const": "account",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "title": "AccountOwner",
+        "type": "object"
+      },
+      "AccountOwnerPayload": {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "const": "account",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "title": "AccountOwnerPayload",
+        "type": "object"
+      },
       "ActiveIdResult": {
         "additionalProperties": false,
         "properties": {
@@ -8476,9 +8506,23 @@
             "default": null,
             "title": "Profile"
           },
-          "session_id": {
-            "title": "Session Id",
-            "type": "string"
+          "owner": {
+            "discriminator": {
+              "mapping": {
+                "account": "#/components/schemas/AccountOwner",
+                "session": "#/components/schemas/SessionOwner"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SessionOwner"
+              },
+              {
+                "$ref": "#/components/schemas/AccountOwner"
+              }
+            ],
+            "title": "Owner"
           },
           "op_id": {
             "title": "Op Id",
@@ -8486,7 +8530,7 @@
           }
         },
         "required": [
-          "session_id",
+          "owner",
           "op_id"
         ],
         "title": "ConnectionOperationParams",
@@ -8735,9 +8779,23 @@
             "default": null,
             "title": "Profile"
           },
-          "session_id": {
-            "title": "Session Id",
-            "type": "string"
+          "owner": {
+            "discriminator": {
+              "mapping": {
+                "account": "#/components/schemas/AccountOwner",
+                "session": "#/components/schemas/SessionOwner"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SessionOwner"
+              },
+              {
+                "$ref": "#/components/schemas/AccountOwner"
+              }
+            ],
+            "title": "Owner"
           },
           "op_id": {
             "title": "Op Id",
@@ -8748,7 +8806,7 @@
           }
         },
         "required": [
-          "session_id",
+          "owner",
           "op_id",
           "result"
         ],
@@ -8902,6 +8960,24 @@
             "title": "Targets",
             "type": "array"
           },
+          "owner": {
+            "discriminator": {
+              "mapping": {
+                "account": "#/components/schemas/AccountOwnerPayload",
+                "session": "#/components/schemas/SessionOwnerPayload"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SessionOwnerPayload"
+              },
+              {
+                "$ref": "#/components/schemas/AccountOwnerPayload"
+              }
+            ],
+            "title": "Owner"
+          },
           "target": {
             "anyOf": [
               {
@@ -8965,7 +9041,8 @@
           "seq",
           "deadline_at",
           "settled",
-          "targets"
+          "targets",
+          "owner"
         ],
         "title": "ConnectionUpdatePayload",
         "type": "object"
@@ -9768,14 +9845,30 @@
             "default": null,
             "title": "Profile"
           },
-          "session_id": {
-            "title": "Session Id",
-            "type": "string"
+          "owner": {
+            "discriminator": {
+              "mapping": {
+                "account": "#/components/schemas/AccountOwner",
+                "session": "#/components/schemas/SessionOwner"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SessionOwner"
+              },
+              {
+                "$ref": "#/components/schemas/AccountOwner"
+              }
+            ],
+            "title": "Owner"
           },
           "connectors": {
             "items": {
+              "pattern": "^[a-z0-9][a-z0-9_-]*$",
               "type": "string"
             },
+            "minItems": 1,
             "title": "Connectors",
             "type": "array"
           },
@@ -9786,7 +9879,7 @@
           }
         },
         "required": [
-          "session_id",
+          "owner",
           "connectors"
         ],
         "title": "ConnectorsConnectParams",
@@ -9892,13 +9985,27 @@
             "default": null,
             "title": "Profile"
           },
-          "session_id": {
-            "title": "Session Id",
-            "type": "string"
+          "owner": {
+            "discriminator": {
+              "mapping": {
+                "account": "#/components/schemas/AccountOwner",
+                "session": "#/components/schemas/SessionOwner"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SessionOwner"
+              },
+              {
+                "$ref": "#/components/schemas/AccountOwner"
+              }
+            ],
+            "title": "Owner"
           }
         },
         "required": [
-          "session_id"
+          "owner"
         ],
         "title": "ConnectorsListParams",
         "type": "object"
@@ -27192,6 +27299,47 @@
           "session_id"
         ],
         "title": "SessionMostRecentResult",
+        "type": "object"
+      },
+      "SessionOwner": {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "const": "session",
+            "title": "Type",
+            "type": "string"
+          },
+          "session_id": {
+            "minLength": 1,
+            "title": "Session Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "session_id"
+        ],
+        "title": "SessionOwner",
+        "type": "object"
+      },
+      "SessionOwnerPayload": {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "const": "session",
+            "title": "Type",
+            "type": "string"
+          },
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "session_id"
+        ],
+        "title": "SessionOwnerPayload",
         "type": "object"
       },
       "SessionParams": {
